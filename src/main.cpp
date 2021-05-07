@@ -1,9 +1,10 @@
 #include <FS.h>
 #include <ESP8266WiFi.h>
+#include <WiFiManager.h>
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
-#include <WiFiManager.h>
 #include <DallasTemperature.h>
+#include <HX711.h>
 
 // WiFi stuff
 String header;
@@ -19,10 +20,21 @@ bool vodkaState = false;
 OneWire oneWire(2); // D4 aka GPIO2
 DallasTemperature tempSensor(&oneWire);
 float temp = 99;
+int pints = 99;
+
+// Load sensor
+const int loadDout = 14; // D5
+const int loadSdk = 12; // D6
+const int offset = 8234508;
+const int scale = -20.9993;
+HX711 hx;
+void updatePints() {
+  float grams = hx.get_units(1);
+  pints = int((grams-4250)*0.002);
+}
 
 void setup() {
   Serial.begin(115200);
-  WiFi.hostname("sensorbackend");
   // Initialize pins
   pinMode(beerPin, OUTPUT);
   digitalWrite(beerPin, LOW);
@@ -33,12 +45,15 @@ void setup() {
   delay(1000); // Give the OneWire time to fire up
   tempSensor.requestTemperatures();
   temp = tempSensor.getTempCByIndex(0);
+  // Initialize loadsensor
+  hx.begin(loadDout, loadSdk);
+  hx.set_scale(scale);
+  hx.set_offset(offset);
+  // Initialize WiFi stuff
   WiFiManager wifiManager;
   // Uncomment and run it once, if you want to erase all the stored information
   // wifiManager.resetSettings();
   wifiManager.autoConnect("getBeer_WiFi_configuration");
-  // TODO Uncomment below after updating platformio version to bleeding edge
-  // wifiManager.setHostname("sensorbackend");
   server.begin();
 }
 
@@ -83,7 +98,7 @@ void loop() {
               client.println(temp);
             }
             else if (header.indexOf("GET /api/pints HTTP/1.1") >= 0) {
-              int pints = 9999;
+              updatePints();
               client.println(pints);
             }
             else if (header.indexOf("GET /api/killswitch HTTP/1.1") >= 0) {
