@@ -37,7 +37,8 @@ void setup() {
   // Uncomment and run it once, if you want to erase all the stored information
   // wifiManager.resetSettings();
   wifiManager.autoConnect("getBeer_WiFi_configuration");
-  // wifi_station_set_hostname("sensorbackend");
+  // TODO Uncomment below after updating platformio version to bleeding edge
+  // wifiManager.setHostname("sensorbackend");
   server.begin();
 }
 
