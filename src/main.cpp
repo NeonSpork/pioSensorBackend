@@ -17,6 +17,7 @@ bool vodkaState = false;
 // Temp sensor
 OneWire oneWire(2); // D4 aka GPIO2
 DallasTemperature tempSensor(&oneWire);
+float temp = 99;
 
 void setup() {
   Serial.begin(115200);
@@ -28,6 +29,9 @@ void setup() {
   digitalWrite(vodkaPin, LOW);
   // Initialize temp sensor
   tempSensor.begin();
+  delay(1000); // Give the OneWire time to fire up
+  tempSensor.requestTemperatures();
+  temp = tempSensor.getTempCByIndex(0);
   WiFiManager wifiManager;
   // Uncomment and run it once, if you want to erase all the stored information
   // wifiManager.resetSettings();
@@ -72,7 +76,7 @@ void loop() {
               client.println(vodkaState);
             }
             else if (header.indexOf("GET /api/temp HTTP/1.1") >= 0) {
-              float temp = tempSensor.getTempCByIndex(0);
+              temp = tempSensor.getTempCByIndex(0);
               client.println(temp);
             }
             else if (header.indexOf("GET /api/pints HTTP/1.1") >= 0) {
