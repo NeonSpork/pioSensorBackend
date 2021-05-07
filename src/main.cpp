@@ -1,3 +1,4 @@
+#include <FS.h>
 #include <ESP8266WiFi.h>
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
@@ -76,6 +77,7 @@ void loop() {
               client.println(vodkaState);
             }
             else if (header.indexOf("GET /api/temp HTTP/1.1") >= 0) {
+              tempSensor.requestTemperatures();
               temp = tempSensor.getTempCByIndex(0);
               client.println(temp);
             }
