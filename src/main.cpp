@@ -2,13 +2,7 @@
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
 #include <WiFiManager.h>
-#include <arduino-timer.h>
-
 #include <DallasTemperature.h>
-
-
-// Timer stuff
-auto timer = timer_create_default();
 
 // WiFi stuff
 String header;
@@ -17,35 +11,12 @@ WiFiServer server(80);
 // Valves
 const int beerPin = 5; // D1
 const int vodkaPin = 4; // D2
-String beerState = "CLOSED";
-String vodkaState = "CLOSED";
+bool beerState = false;
+bool vodkaState = false;
 
 // Temp sensor
 OneWire oneWire(2); // D4 aka GPIO2
 DallasTemperature tempSensor(&oneWire);
-DeviceAddress probeID;
-
-void startBeer() {
-  digitalWrite(beerPin, HIGH);
-  beerState = "OPEN";
-}
-
-bool stopBeer(void *) {
-  digitalWrite(beerPin, LOW);
-  beerState = "CLOSED";
-  return true;
-}
-
-void startVodka() {
-  digitalWrite(vodkaPin, HIGH);
-  vodkaState = "OPEN";
-}
-
-bool stopVodka(void *) {
-  digitalWrite(vodkaPin, LOW);
-  vodkaState = "CLOSED";
-  return true;
-}
 
 void setup() {
   Serial.begin(115200);
@@ -57,8 +28,6 @@ void setup() {
   digitalWrite(vodkaPin, LOW);
   // Initialize temp sensor
   tempSensor.begin();
-  oneWire.reset_search();
-  oneWire.search(probeID);
   WiFiManager wifiManager;
   // Uncomment and run it once, if you want to erase all the stored information
   // wifiManager.resetSettings();
@@ -68,7 +37,6 @@ void setup() {
 }
 
 void loop() {
-  timer.tick();
   WiFiClient client = server.available();
   if (client) {
     Serial.println("New client!");
@@ -83,23 +51,28 @@ void loop() {
             client.println("Content-Type: text/html");
             client.println("Connection: close");
             client.println("Access-Control-Allow-Origin: *");
+            client.println("Access-Control-Allow-Methods: GET, PUT");
             client.println();
 
             // CONTROL VALVES
-            if (header.indexOf("GET /api/dispenseBeer HTTP/1.1") >= 0) {
-              startBeer();
-              timer.in(5000, stopBeer);
-              // Ends pour after 5s, adjust time for specific volume
-              client.println("BEER SUCCESSFUL.");
+            if (header.indexOf("GET /api/openBeer HTTP/1.1") >= 0) {
+              beerState = true;
+              client.println(beerState);
             }
-            else if (header.indexOf("GET /api/dispenseVodka HTTP/1.1") >= 0) {
-              startVodka();
-              timer.in(2000, stopVodka);
-              // Ends pour after 2s, adjust time for specific volume
-              client.println("VODKA SUCCESSFUL.");
+            else if (header.indexOf("GET /api/closeBeer HTTP/1.1") >= 0) {
+              beerState = false;
+              client.println(beerState);
+            }
+            else if (header.indexOf("GET /api/openVodka HTTP/1.1") >= 0) {
+              vodkaState = true;
+              client.println(vodkaState);
+            }
+            else if (header.indexOf("GET /api/closeVodka HTTP/1.1") >= 0) {
+              vodkaState = false;
+              client.println(vodkaState);
             }
             else if (header.indexOf("GET /api/temp HTTP/1.1") >= 0) {
-              float temp = tempSensor.getTempC(probeID);
+              float temp = tempSensor.getTempCByIndex(0);
               client.println(temp);
             }
             else if (header.indexOf("GET /api/pints HTTP/1.1") >= 0) {
@@ -127,5 +100,7 @@ void loop() {
     // Close connection
     client.stop();
   }
+  digitalWrite(beerPin, beerState);
+  digitalWrite(vodkaPin, vodkaState);
 }
 
