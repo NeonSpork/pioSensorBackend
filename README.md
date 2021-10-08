@@ -1,9 +1,10 @@
-# getBeer - BACKEND
-
+# PlatformIO GPIO Backend
 ![Default neon sign logo](https://raw.githubusercontent.com/NeonSpork/ngGetBeer/main/src/assets/images/craggs_lounge.svg)
 
 Backend part of a complete dispenser program for a custom kegerator.
 [Frontend](https://github.com/NeonSpork/ngGetBeer) can be found here.
+## API
+API interface to use a frontend that can send HTTP requests that trigger interface with GPIO pins.
 
 ## Backend
 Runs on a NodeMCU, use PlatformIO to install and flash this.
